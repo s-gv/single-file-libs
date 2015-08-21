@@ -6,13 +6,14 @@
 
 int main(int argc, const char *argv[])
 {
-    float* vData;
-    int vDataCount;
+    sgv_obj_object* objects; int objectsLen;
 
     printf("Testing test1.obj ... ");
-    vData = sgv_obj_read("test1.obj", &vDataCount);
-    assert(vDataCount == 8*3*12);
-    sgv_obj_free(vData);
+    objects = sgv_obj_read("test1.obj", &objectsLen);
+    assert(objectsLen == 2);
+    assert(objects[0].meshesLen == 1);
+    assert(objects[1].meshes[0].vertexBufferLen == 6*2*3*8);
+    sgv_obj_free(objects);
     printf("OK\n");
 
     return 0;
