@@ -19,6 +19,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
+/*
+How To Use
+==========
+
+Include this .h file in all the source files where you want use the provided
+library functions. Only in one of the files, #define SGV_GLMATH_IMPLEMENTATION
+before including this .h file.
+
+For example, if your project has 'main.c' and 'src.c'. Then,
+
+In 'src.c':
+#include "sgv_glmath.h"
+...
+
+
+In 'main.c':
+#define SGV_GLMATH_IMPLEMENTATION
+#include "sgv_glmath.h"
+...
+*/
+
 #ifndef SGV_GLMATH_H
 #define SGV_GLMATH_H
 
