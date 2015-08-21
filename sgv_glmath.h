@@ -21,7 +21,7 @@ SOFTWARE.
 */
 
 /*
-How To Use
+HOW TO USE
 ==========
 
 Include this .h file in all the source files where you want use the provided
@@ -46,6 +46,10 @@ In 'main.c':
 
 #include <math.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // All matrices are expected to be 4x4 matrices in row-major order
 // All angles are expected to be in radians
 
@@ -64,6 +68,10 @@ void sgv_glm_lookAt(float* res,
                     float targetX, float targetY, float targetZ,
                     float upX, float upY, float upZ); // res = ViewMat * res. Eye is the location of the camera and Center is what the camera is looking at.
 void sgv_glm_perspective(float* res, float fovY, float aspect, float nearZ, float farZ); // res = perspective * res
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
