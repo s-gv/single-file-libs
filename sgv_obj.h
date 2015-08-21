@@ -24,7 +24,7 @@ SOFTWARE.
 SGV_OBJ
 =======
 
-SGV_OBJ is a simple and incomplete parser for reading Wavefront OBJ files.
+SGV_OBJ is a simple but incomplete parser for reading Wavefront OBJ files.
 It reads OBJ files with a single object that is triangulated.
 
 For each vertex, (posX, posY, posZ, normalX, normalY, normalZ, U, V)
@@ -61,6 +61,7 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef SGV_OBJ_STATIC
 #define SGV_OBJ_DEF static
@@ -69,22 +70,13 @@ extern "C" {
 #endif
 
 
-// read the number of vertices and triangles in an obj file
-SGV_OBJ_DEF void sgv_obj_readsize(const char* filename, 
-                                  int* nVertices, 
-                                  int* nTriangles); 
+// read an array of (X, Y, Z, normalX, normalY, normalZ, U, V) tuples.
+// 'len' is the size of the returned array. 
+// For example, if two tuples are read, 'len' is set to 16.
+SGV_OBJ_DEF float* sgv_obj_read(const char* filename, int* len);
 
-
-
-// read the OBJ file. 
-// vBuffer is filled with (X, Y, Z, normalX, normalY, normalZ, U, V) tuples
-// vBufferCount should be 8*nVertices
-// iBuffer is filled with (v1, v2, v3) tuples of the triangles
-// iBufferCount should be 3*nTriangles
-SGV_OBJ_DEF void sgv_obj_read(const char* filename,
-                              float* vBuffer, int vBufferCount,
-                              float* iBuffer, int iBufferCount);
-
+// free the vertex array read using sgv_obj_read(filename);
+SGV_OBJ_DEF void sgv_obj_free(float* data);
 
 #ifdef __cplusplus
 }
@@ -93,21 +85,130 @@ SGV_OBJ_DEF void sgv_obj_read(const char* filename,
 #endif
 
 #ifdef SGV_OBJ_IMPLEMENTATION
-SGV_OBJ_DEF void sgv_obj_readsize(const char* filename, 
-                                  int* nVertices, 
-                                  int* nTriangles)
+SGV_OBJ_DEF float* sgv_obj_read(const char* filename, int* len)
 {
-    FILE* fp = fopen(filename, "r");
+    char lineBuf[1024];
+    
+    *len = 0;
 
+    ///////////////////////////////////////////////////////////////////////////
+    // First pass: Figure out the size of the arrays
+    int nVertices = 0, nTexCoords = 0, nNormals = 0, nTriangles = 0;
+
+    FILE* fp = fopen(filename, "r");
     if (fp == NULL) // Error. Could not open file
     {
-        nVertices = -1;
-        nTriangles = -1;
-        return;
+        return NULL;
+    }
+    while(fgets(lineBuf, 1024, fp) != NULL)
+    {
+        if (lineBuf[0] == 'v' && lineBuf[1] == ' ')
+        {
+            nVertices++;
+        }
+        if (lineBuf[0] == 'v' && lineBuf[1] == 'n' && lineBuf[2] == ' ')
+        {
+            nNormals++;
+        }
+        if (lineBuf[0] == 'f' && lineBuf[1] == ' ')
+        {
+            nTriangles++;
+        }
+        if (lineBuf[0] == 'v' && lineBuf[1] == 't' && lineBuf[2] == ' ')
+        {
+            nTexCoords++;
+        }
+    }
+    fclose(fp);
+    //////////////////////////////////////////////////////////////////////////////
+
+    float* vertices = malloc(nVertices*3*sizeof(float)); 
+    float* normals = malloc(nNormals*3*sizeof(float));
+    float* texcoords = malloc(nTexCoords*2*sizeof(float));
+    float* vertexBuffer = malloc(nTriangles*3*8*sizeof(float));
+
+    int vertexPtr = 0, normalPtr = 0, texcoordPtr = 0, vertexBufferPtr = 0;
+
+    if (vertices == NULL || normals == NULL 
+            || texcoords == NULL || vertexBuffer == NULL)
+    {
+        free(vertexBuffer); 
+        free(normals);
+        free(vertices);
+        free(texcoords);
+        return NULL;
     }
 
-    
+    //////////////////////////////////////////////////////////////////////////////
+    // Second pass: Fill in the array
+    fp = fopen(filename, "r");
+    if (fp == NULL) // Error. Could not open file
+    {
+        free(vertexBuffer); 
+        free(normals);
+        free(vertices);
+        free(texcoords);
+        return NULL;
+    }
+    while(fgets(lineBuf, 1024, fp) != NULL)
+    {
+        if (lineBuf[0] == 'v' && lineBuf[1] == ' ')
+        {
+            sscanf(lineBuf, "v %f %f %f", 
+                    &vertices[3*vertexPtr], 
+                    &vertices[3*vertexPtr+1],
+                    &vertices[3*vertexPtr+2]);
+            vertexPtr++;
+        }
+        if (lineBuf[0] == 'v' && lineBuf[1] == 'n' && lineBuf[2] == ' ')
+        {
+            sscanf(lineBuf, "vn %f %f %f",
+                    &normals[3*normalPtr],
+                    &normals[3*normalPtr+1],
+                    &normals[3*normalPtr+2]);
+            normalPtr++;
+        }
+        if (lineBuf[0] == 'f' && lineBuf[1] == ' ')
+        {
+            int v[3], t[3], n[3];
+            sscanf(lineBuf, "f %d/%d/%d %d/%d/%d %d/%d/%d",
+                    &v[0], &t[0], &n[0], 
+                    &v[1], &t[1], &n[1], 
+                    &v[2], &t[2], &n[2]);
+            int i;
+            for (i = 0; i < 3; i++)
+            {
+                vertexBuffer[8*vertexBufferPtr] = vertices[3*(v[i]-1)]; // X
+                vertexBuffer[8*vertexBufferPtr+1] = vertices[3*(v[i]-1) + 1]; // Y
+                vertexBuffer[8*vertexBufferPtr+2] = vertices[3*(v[i]-1) + 2]; // Z
 
+                vertexBuffer[8*vertexBufferPtr+3] = normals[3*(n[i]-1) + 1]; // normalX
+                vertexBuffer[8*vertexBufferPtr+4] = normals[3*(n[i]-1) + 2]; // normalY
+                vertexBuffer[8*vertexBufferPtr+5] = normals[3*(n[i]-1) + 1]; // normalZ
+
+                vertexBuffer[8*vertexBufferPtr+6] = texcoords[3*(t[i]-1) + 1]; // Y
+                vertexBuffer[8*vertexBufferPtr+7] = texcoords[3*(t[i]-1) + 2]; // Z
+
+                vertexBufferPtr++;
+            }
+        }
+        if (lineBuf[0] == 'v' && lineBuf[1] == 't' && lineBuf[2] == ' ')
+        {
+            sscanf(lineBuf, "vt %f %f", 
+                    &texcoords[texcoordPtr*3], 
+                    &texcoords[texcoordPtr*3+1]);
+            texcoordPtr++;
+        }
+    }
     fclose(fp);
+    //////////////////////////////////////////////////////////////////////////////
+    *len = nTriangles*3*8;
+
+    return NULL;
 }
+SGV_OBJ_DEF void sgv_obj_free(float* data)
+{
+    free(data);
+}
+
 #endif
