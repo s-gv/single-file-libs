@@ -6,14 +6,15 @@
 
 int main(int argc, const char *argv[])
 {
-    sgv_obj_object* objects; int objectsLen;
+    sgv_obj* obj;
 
     printf("Testing test1.obj ... ");
-    objects = sgv_obj_read("test1.obj", &objectsLen);
-    assert(objectsLen == 2);
-    assert(objects[0].meshesLen == 1);
-    assert(objects[1].meshes[0].vertexBufferLen == 6*2*3*8);
-    sgv_obj_free(objects);
+    obj = sgv_obj_read("test1.obj");
+    assert(obj->objectsLen == 2);
+    assert(obj->objects[0].meshesLen == 1);
+    assert(obj->objects[0].meshes[0].vertexBufferLen == 6*2*3*8);
+    //sgv_obj_disp(obj);
+    sgv_obj_free(obj);
     printf("OK\n");
 
     return 0;

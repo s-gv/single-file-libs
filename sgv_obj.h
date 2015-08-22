@@ -76,23 +76,30 @@ extern "C" {
 
 typedef struct {
     char* materialFileName;
-    char* material;
-    float* vertexBuffer; // an array of (X, Y, Z, normalX, normalY, normalZ, U, V) tuples.
-    int vertexBufferLen; // == 8 * num of elements in vertexBuffer
+    char* materialName;
+    int vertexBufferOffset; // == start of elements in this mesh
+    int vertexBufferLen; // == 8 * num of elements in vertexBuffer for this mesh
 } sgv_obj_mesh;
 
 typedef struct {
-    char* object;
+    char* objectName;
     sgv_obj_mesh* meshes;
     int meshesLen;
 } sgv_obj_object;
 
-// returns an array of type sgv_obj_object. 
-// 'objectsLen' is the number of elements in objects
-SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen);
+typedef struct {
+    sgv_obj_object* objects;
+    int objectsLen;
+    float* vertexBuffer;
+} sgv_obj;
 
-// free the vertex array read using sgv_obj_read(filename);
-SGV_OBJ_DEF void sgv_obj_free(sgv_obj_object* objects);
+// returns an sgv_obj
+SGV_OBJ_DEF sgv_obj* sgv_obj_read(const char* filename);
+
+// free the sgv_obj read using sgv_obj_read(filename);
+SGV_OBJ_DEF void sgv_obj_free(sgv_obj* obj);
+
+void sgv_obj_disp(sgv_obj* obj);
 
 #ifdef __cplusplus
 }
@@ -102,43 +109,22 @@ SGV_OBJ_DEF void sgv_obj_free(sgv_obj_object* objects);
 
 #ifdef SGV_OBJ_IMPLEMENTATION
 
-#define SGV_OBJ_MAX_OBJECTS 10000
-#define SGV_OBJ_MAX_MESHES_PER_OBJECT 10
-
-SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen)
+SGV_OBJ_DEF sgv_obj* sgv_obj_read(const char* filename)
 {
-    int i;
-
-    *objectsLen = 0;
-    sgv_obj_object* result = NULL;
+    sgv_obj* result = NULL;
 
     char* lineBuf = sgv_obj_mem_malloc(1024*sizeof(char));
     if (lineBuf == NULL)
         goto error_0;
     
-    int* nTriangles = sgv_obj_mem_malloc(SGV_OBJ_MAX_OBJECTS*SGV_OBJ_MAX_MESHES_PER_OBJECT*sizeof(int));
-    if (nTriangles == NULL)
-        goto error_1;
-
-    char* materialFileName = sgv_obj_mem_malloc(250*sizeof(char));
-    if (materialFileName == NULL)
-        goto error_2;
-
-    char* material = sgv_obj_mem_malloc(250*sizeof(char));
-    if (material == NULL)
-        goto error_3;
-
-    int objectIdx = 0, meshIdx = 0;
-    int nMaterialFiles = 0;
-    int nVertices = 0, nTexCoords = 0, nNormals = 0, nTotalTris = 0, nObjects = 0, nMeshes = 0;
-    for (i = 0; i < SGV_OBJ_MAX_OBJECTS*SGV_OBJ_MAX_MESHES_PER_OBJECT; i++)
-        nTriangles[i] = 0;
+    int nMaterialFiles = 0, nMeshes = 0, nObjects = 0;
+    int nVertices = 0, nTexCoords = 0, nNormals = 0, nTotalTris = 0;
 
     ///////////////////////////////////////////////////////////////////////////
     // First pass: Figure out the size of the arrays
     FILE* fp = fopen(filename, "r");
     if (fp == NULL) // Error. Could not open file
-        goto error_4;
+        goto error_1;
 
     while(fgets(lineBuf, 1024, fp) != NULL)
     {
@@ -153,7 +139,6 @@ SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen)
         if (lineBuf[0] == 'f' && lineBuf[1] == ' ')
         {
             nTotalTris++;
-            nTriangles[(objectIdx-1) * SGV_OBJ_MAX_MESHES_PER_OBJECT + (meshIdx-1)]++;
         }
         if (lineBuf[0] == 'v' && lineBuf[1] == 't' && lineBuf[2] == ' ')
         {
@@ -161,12 +146,10 @@ SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen)
         }
         if (lineBuf[0] == 'o' && lineBuf[1] == ' ')
         {
-            objectIdx++;
-            meshIdx = 0;
+            nObjects++;
         }
         if (lineBuf[0] == 'u' && lineBuf[1] == 's')
         {
-            meshIdx++;
             nMeshes++;
         }
         if (lineBuf[0] == 'm' && lineBuf[1] == 't' && lineBuf[2] == 'l')
@@ -174,57 +157,59 @@ SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen)
             nMaterialFiles++;
         }
     }
-    nObjects = objectIdx;
     fclose(fp);
     //////////////////////////////////////////////////////////////////////////////
 
     float* vertices = sgv_obj_mem_malloc(nVertices*3*sizeof(float)); 
     if (vertices == NULL)
-        goto error_4;
+        goto error_1;
 
     float* normals = sgv_obj_mem_malloc(nNormals*3*sizeof(float));
     if (normals == NULL)
-        goto error_5;
+        goto error_2;
 
     float* texcoords = sgv_obj_mem_malloc(nTexCoords*2*sizeof(float));
     if (texcoords == NULL)
-        goto error_6;
+        goto error_3;
 
     float* vertexBuffer = sgv_obj_mem_malloc(nTotalTris*3*8*sizeof(float));
     if (vertexBuffer == NULL)
-        goto error_7;
+        goto error_4;
 
     sgv_obj_mesh* meshes = sgv_obj_mem_malloc(nMeshes*sizeof(sgv_obj_mesh));
     if (meshes == NULL)
-        goto error_8;
+        goto error_5;
 
     sgv_obj_object* objects = sgv_obj_mem_malloc(nObjects*sizeof(sgv_obj_object));
     if (objects == NULL)
-        goto error_9;
+        goto error_6;
 
     char* materialFileNames = sgv_obj_mem_malloc(nMaterialFiles*50*sizeof(char));
     if (materialFileNames == NULL)
-        goto error_10;
+        goto error_7;
 
     char* objectNames = sgv_obj_mem_malloc(nObjects*50*sizeof(char));
     if (objectNames == NULL)
-        goto error_11;
+        goto error_8;
 
     char* materialNames = sgv_obj_mem_malloc(nMeshes*50*sizeof(char));
     if (materialNames == NULL)
-        goto error_12;
+        goto error_9;
+
+    result = sgv_obj_mem_malloc(sizeof(sgv_obj));
+    if (result == NULL)
+        goto error_10;
 
     //////////////////////////////////////////////////////////////////////////////
     // Second pass: Fill in the array
     int vertexIdx = 0, normalIdx = 0, vertexBufferIdx = 0, texcoordIdx = 0;
     int matFileNameIdx = 0, matNameIdx = 0, objectNameIdx = 0;
     int lastMatFileNameIdx = 0, lastMatNameIdx = 0, lastObjectNameIdx = 0;
-    meshIdx = 0;
-    objectIdx = 0;
+    int meshIdx = 0, objectIdx = 0;
 
     fp = fopen(filename, "r");
     if (fp == NULL) // Error. Could not open file
-        goto error_13;
+        goto error_11;
     
     while(fgets(lineBuf, 1024, fp) != NULL)
     {
@@ -258,9 +243,9 @@ SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen)
                 vertexBuffer[8*vertexBufferIdx+1] = vertices[3*(v[i]-1) + 1]; // Y
                 vertexBuffer[8*vertexBufferIdx+2] = vertices[3*(v[i]-1) + 2]; // Z
 
-                vertexBuffer[8*vertexBufferIdx+3] = normals[3*(n[i]-1) + 1]; // normalX
-                vertexBuffer[8*vertexBufferIdx+4] = normals[3*(n[i]-1) + 2]; // normalY
-                vertexBuffer[8*vertexBufferIdx+5] = normals[3*(n[i]-1) + 1]; // normalZ
+                vertexBuffer[8*vertexBufferIdx+3] = normals[3*(n[i]-1)]; // normalX
+                vertexBuffer[8*vertexBufferIdx+4] = normals[3*(n[i]-1) + 1]; // normalY
+                vertexBuffer[8*vertexBufferIdx+5] = normals[3*(n[i]-1) + 2]; // normalZ
 
                 vertexBuffer[8*vertexBufferIdx+6] = texcoords[3*(t[i]-1) + 1]; // Y
                 vertexBuffer[8*vertexBufferIdx+7] = texcoords[3*(t[i]-1) + 2]; // Z
@@ -290,8 +275,8 @@ SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen)
 
             objects[objectIdx-1].meshesLen = objects[objectIdx-1].meshesLen + 1;
             meshes[meshIdx].materialFileName = &materialFileNames[lastMatFileNameIdx];
-            meshes[meshIdx].material = &materialNames[lastMatNameIdx];
-            meshes[meshIdx].vertexBuffer = &vertexBuffer[8*vertexBufferIdx];
+            meshes[meshIdx].materialName = &materialNames[lastMatNameIdx];
+            meshes[meshIdx].vertexBufferOffset = vertexBufferIdx*8;
             meshes[meshIdx].vertexBufferLen = 0;
             meshIdx++;
         }
@@ -302,56 +287,75 @@ SGV_OBJ_DEF sgv_obj_object* sgv_obj_read(const char* filename, int* objectsLen)
             objectNameIdx += strlen(&objectNames[objectNameIdx]) + 1;
 
             objectIdx++;
-            objects[objectIdx-1].object = &objectNames[lastObjectNameIdx];
+            objects[objectIdx-1].objectName = &objectNames[lastObjectNameIdx];
             objects[objectIdx-1].meshes = &meshes[meshIdx];
             objects[objectIdx-1].meshesLen = 0;
         }
     }
     fclose(fp);
     //////////////////////////////////////////////////////////////////////////////
+    result->vertexBuffer = vertexBuffer;
+    result->objects = objects;
+    result->objectsLen = nObjects;
+    goto error_4;
 
-    *objectsLen = nObjects;
-    result = objects;
-    goto error_7;
-
-error_13:
-    sgv_obj_mem_free(materialNames);
-error_12:
-    sgv_obj_mem_free(objectNames);
 error_11:
-    sgv_obj_mem_free(materialFileNames);
+    sgv_obj_mem_free(result);
 error_10:
-    sgv_obj_mem_free(objects);
+    sgv_obj_mem_free(materialNames);
 error_9:
-    sgv_obj_mem_free(meshes);
+    sgv_obj_mem_free(objectNames);
 error_8:
-    sgv_obj_mem_free(vertexBuffer);
+    sgv_obj_mem_free(materialFileNames);
 error_7:
-    sgv_obj_mem_free(texcoords);
+    sgv_obj_mem_free(objects);
 error_6:
-    sgv_obj_mem_free(normals);
+    sgv_obj_mem_free(meshes);
 error_5:
-    sgv_obj_mem_free(vertices);
+    sgv_obj_mem_free(vertexBuffer);
 error_4:
-    sgv_obj_mem_free(material);
+    sgv_obj_mem_free(texcoords);
 error_3:
-    sgv_obj_mem_free(materialFileName);
+    sgv_obj_mem_free(normals);
 error_2:
-    sgv_obj_mem_free(nTriangles);
+    sgv_obj_mem_free(vertices);
 error_1:
     sgv_obj_mem_free(lineBuf);
 error_0:
     return result;
 }
 
-SGV_OBJ_DEF void sgv_obj_free(sgv_obj_object* objects)
+SGV_OBJ_DEF void sgv_obj_free(sgv_obj* obj)
 {
-    sgv_obj_mem_free(objects[0].meshes[0].vertexBuffer);
-    sgv_obj_mem_free(objects[0].meshes[0].materialFileName);
-    sgv_obj_mem_free(objects[0].meshes[0].material);
-    sgv_obj_mem_free(objects[0].object);
-    sgv_obj_mem_free(objects[0].meshes);
-    sgv_obj_mem_free(objects);
+    sgv_obj_mem_free(obj->vertexBuffer);
+    sgv_obj_mem_free(obj->objects[0].objectName);
+    sgv_obj_mem_free(obj->objects[0].meshes[0].materialFileName);
+    sgv_obj_mem_free(obj->objects[0].meshes[0].materialName);
+    sgv_obj_mem_free(obj->objects[0].meshes);
+    sgv_obj_mem_free(obj->objects);
+    sgv_obj_mem_free(obj);
+}
+
+void sgv_obj_disp(sgv_obj* obj)
+{
+    int i, j, k;
+    for (i = 0; i < obj->objectsLen; i++)
+    {
+        printf("\nObject: %s\n", obj->objects[i].objectName);
+        for (j = 0; j < obj->objects[i].meshesLen; j++) 
+        {
+            printf("  MaterialFileName: %s\n", obj->objects[i].meshes[j].materialFileName);
+            printf("  MaterialName: %s\n", obj->objects[i].meshes[j].materialName);
+            int offset = obj->objects[i].meshes[j].vertexBufferOffset;
+            for (k = 0; k < obj->objects[i].meshes[j].vertexBufferLen; k++)
+            {
+                if (k % 8 == 0)
+                    printf("\n");
+                printf("%8.2f, ", obj->vertexBuffer[offset+k]);
+            }
+        }
+    }
+    printf("\n");
 }
 
 #endif
