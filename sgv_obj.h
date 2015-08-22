@@ -94,12 +94,38 @@ typedef struct {
 } sgv_obj;
 
 // returns an sgv_obj
-SGV_OBJ_DEF sgv_obj* sgv_obj_read(const char* filename);
+SGV_OBJ_DEF sgv_obj* sgv_obj_readobj(const char* filename);
 
 // free the sgv_obj read using sgv_obj_read(filename);
-SGV_OBJ_DEF void sgv_obj_free(sgv_obj* obj);
+SGV_OBJ_DEF void sgv_obj_freeobj(sgv_obj* obj);
 
-void sgv_obj_disp(sgv_obj* obj);
+// print out sgv_obj
+SGV_OBJ_DEF void sgv_obj_dispobj(sgv_obj* obj);
+
+typedef struct {
+    char* materialName;
+    float KaR, KaG, KaB;
+    float KdR, KdG, KdB;
+    float KsR, KsG, KsB;
+    int illum;
+    char* map_Ka;
+    char* map_Kd;
+    char* map_Ks;
+} sgv_obj_material;
+
+typedef struct {
+    sgv_obj_material* materials;
+    int materialsLen;
+} sgv_obj_mtl;
+
+// read an sgv_obj_mtl from file
+SGV_OBJ_DEF sgv_obj_mtl* sgv_obj_readmtl(const char* filename);
+
+// destroy sgv_obj_mtl
+SGV_OBJ_DEF void sgv_obj_freemtl(sgv_obj_mtl* mtl);
+
+// print out sgv_obj_mtl
+SGV_OBJ_DEF void sgv_obj_dispmtl(sgv_obj_mtl* mtl);
 
 #ifdef __cplusplus
 }
@@ -109,7 +135,7 @@ void sgv_obj_disp(sgv_obj* obj);
 
 #ifdef SGV_OBJ_IMPLEMENTATION
 
-SGV_OBJ_DEF sgv_obj* sgv_obj_read(const char* filename)
+SGV_OBJ_DEF sgv_obj* sgv_obj_readobj(const char* filename)
 {
     sgv_obj* result = NULL;
 
@@ -301,6 +327,7 @@ SGV_OBJ_DEF sgv_obj* sgv_obj_read(const char* filename)
 
 error_11:
     sgv_obj_mem_free(result);
+    result = NULL;
 error_10:
     sgv_obj_mem_free(materialNames);
 error_9:
@@ -325,7 +352,7 @@ error_0:
     return result;
 }
 
-SGV_OBJ_DEF void sgv_obj_free(sgv_obj* obj)
+SGV_OBJ_DEF void sgv_obj_freeobj(sgv_obj* obj)
 {
     sgv_obj_mem_free(obj->vertexBuffer);
     sgv_obj_mem_free(obj->objects[0].objectName);
@@ -336,7 +363,7 @@ SGV_OBJ_DEF void sgv_obj_free(sgv_obj* obj)
     sgv_obj_mem_free(obj);
 }
 
-void sgv_obj_disp(sgv_obj* obj)
+SGV_OBJ_DEF void sgv_obj_dispobj(sgv_obj* obj)
 {
     int i, j, k;
     for (i = 0; i < obj->objectsLen; i++)
@@ -356,6 +383,154 @@ void sgv_obj_disp(sgv_obj* obj)
         }
     }
     printf("\n");
+}
+
+SGV_OBJ_DEF sgv_obj_mtl* sgv_obj_readmtl(const char* filename)
+{
+    int nAllChars = 0, nMaterials = 0;
+    sgv_obj_mtl* result = NULL;
+
+    char* lineBuf = sgv_obj_mem_malloc(1024*sizeof(char));
+    if (lineBuf == NULL)
+        goto error_0;
+
+    /////////////////////////////////////////////////////////////
+    // First pass
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        goto error_1;
+
+    while(fgets(lineBuf, 1024, fp) != NULL)
+    {
+        if (lineBuf[0] == 'n' && lineBuf[1] == 'e' && lineBuf[2] == 'w')
+        {
+            nAllChars += strlen(lineBuf);
+            nMaterials++;
+        }
+        if (lineBuf[0] == 'm' && lineBuf[1] == 'a' && lineBuf[2] == 'p')
+        {
+            nAllChars += strlen(lineBuf);
+        }
+    }
+    fclose(fp);
+    /////////////////////////////////////////////////////////////
+    char* charBuf = sgv_obj_mem_malloc(nAllChars*sizeof(char));
+    if (charBuf == NULL)
+        goto error_1;
+
+    sgv_obj_material* materials = sgv_obj_mem_malloc(nMaterials*sizeof(sgv_obj_material));
+    if (materials == NULL)
+        goto error_2;
+    
+    result = sgv_obj_mem_malloc(sizeof(sgv_obj_mtl));
+    if (result == NULL)
+        goto error_3;
+
+    int materialIdx = 0, charIdx = 0;
+
+    /////////////////////////////////////////////////////////////
+    // Second pass
+    fp = fopen(filename, "r");
+    if (fp == NULL)
+        goto error_4;
+    
+    while(fgets(lineBuf, 1024, fp) != NULL)
+    {
+        if (lineBuf[0] == 'n' && lineBuf[1] == 'e' && lineBuf[2] == 'w')
+        {
+            sscanf(lineBuf, "newmtl %s", &charBuf[charIdx]);
+            materialIdx++;
+            materials[materialIdx-1].materialName = &charBuf[charIdx];
+            materials[materialIdx-1].map_Ka = NULL;
+            materials[materialIdx-1].map_Kd = NULL;
+            materials[materialIdx-1].map_Ks = NULL;
+            charIdx += strlen(&charBuf[charIdx]) + 1;
+        }
+        if (lineBuf[0] == 'm' && lineBuf[1] == 'a' && lineBuf[2] == 'p')
+        {
+            if (lineBuf[4] == 'K' && lineBuf[5] == 'a')
+            {
+                sscanf(lineBuf, "map_Ka %s", &charBuf[charIdx]);
+                materials[materialIdx-1].map_Ka = &charBuf[charIdx];
+                charIdx += strlen(&charBuf[charIdx]) + 1;
+            }
+            if (lineBuf[4] == 'K' && lineBuf[5] == 'd')
+            {
+                sscanf(lineBuf, "map_Kd %s", &charBuf[charIdx]);
+                materials[materialIdx-1].map_Kd = &charBuf[charIdx];
+                charIdx += strlen(&charBuf[charIdx]) + 1;
+            }
+            if (lineBuf[4] == 'K' && lineBuf[5] == 's')
+            {
+                sscanf(lineBuf, "map_Ks %s", &charBuf[charIdx]);
+                materials[materialIdx-1].map_Ks = &charBuf[charIdx];
+                charIdx += strlen(&charBuf[charIdx]) + 1;
+            }
+        }
+
+        if (lineBuf[0] == 'K' && lineBuf[1] == 'a')
+        {
+            sscanf(lineBuf, "Ka %f %f %f", 
+                    &materials[materialIdx-1].KaR,
+                    &materials[materialIdx-1].KaG,
+                    &materials[materialIdx-1].KaB);
+        }
+        if (lineBuf[0] == 'K' && lineBuf[1] == 'd')
+        {
+            sscanf(lineBuf, "Kd %f %f %f", 
+                    &materials[materialIdx-1].KdR,
+                    &materials[materialIdx-1].KdG,
+                    &materials[materialIdx-1].KdB);
+        }
+        if (lineBuf[0] == 'K' && lineBuf[1] == 's')
+        {
+            sscanf(lineBuf, "Ks %f %f %f", 
+                    &materials[materialIdx-1].KsR,
+                    &materials[materialIdx-1].KsG,
+                    &materials[materialIdx-1].KsB);
+        }
+
+        if (lineBuf[0] == 'i' && lineBuf[1] == 'l' && lineBuf[2] == 'l')
+        {
+            sscanf(lineBuf, "illum %d", &materials[materialIdx-1].illum);
+        }
+    }
+    fclose(fp);
+    /////////////////////////////////////////////////////////////
+    result->materialsLen = nMaterials;
+    result->materials = materials;
+    goto error_1;
+
+error_4:
+    sgv_obj_mem_free(result);
+    result = NULL;
+error_3:
+    sgv_obj_mem_free(materials);
+error_2:
+    sgv_obj_mem_free(charBuf);
+error_1:
+    sgv_obj_mem_free(lineBuf);
+error_0:
+    return result;
+}
+
+SGV_OBJ_DEF void sgv_obj_freemtl(sgv_obj_mtl* mtl)
+{
+    sgv_obj_mem_free(mtl->materials[0].materialName);
+    sgv_obj_mem_free(mtl->materials);
+    sgv_obj_mem_free(mtl);
+}
+
+SGV_OBJ_DEF void sgv_obj_dispmtl(sgv_obj_mtl* mtl)
+{
+    int i;
+    printf("\nNumber of materials in this file = %d\n", mtl->materialsLen);
+    for (i = 0; i < mtl->materialsLen; i++)
+    {
+        printf("  Material name: %s\n", mtl->materials[i].materialName);
+        if (mtl->materials[i].map_Kd != NULL)
+            printf("    map_Kd = %s\n", mtl->materials[i].map_Kd);
+    }
 }
 
 #endif
