@@ -91,6 +91,7 @@ typedef struct {
     sgv_obj_object* objects;
     int objectsLen;
     float* vertexBuffer;
+    int vertexBufferLen;
 } sgv_obj;
 
 // returns an sgv_obj
@@ -273,8 +274,8 @@ SGV_OBJ_DEF sgv_obj* sgv_obj_readobj(const char* filename)
                 vertexBuffer[8*vertexBufferIdx+4] = normals[3*(n[i]-1) + 1]; // normalY
                 vertexBuffer[8*vertexBufferIdx+5] = normals[3*(n[i]-1) + 2]; // normalZ
 
-                vertexBuffer[8*vertexBufferIdx+6] = texcoords[3*(t[i]-1) + 1]; // Y
-                vertexBuffer[8*vertexBufferIdx+7] = texcoords[3*(t[i]-1) + 2]; // Z
+                vertexBuffer[8*vertexBufferIdx+6] = texcoords[2*(t[i]-1)]; // U
+                vertexBuffer[8*vertexBufferIdx+7] = texcoords[2*(t[i]-1) + 1]; // V
 
                 vertexBufferIdx++;
                 meshes[meshIdx-1].vertexBufferLen += 8;
@@ -321,6 +322,7 @@ SGV_OBJ_DEF sgv_obj* sgv_obj_readobj(const char* filename)
     fclose(fp);
     //////////////////////////////////////////////////////////////////////////////
     result->vertexBuffer = vertexBuffer;
+    result->vertexBufferLen = nTotalTris*3*8;
     result->objects = objects;
     result->objectsLen = nObjects;
     goto error_4;
