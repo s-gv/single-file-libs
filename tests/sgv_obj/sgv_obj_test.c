@@ -25,5 +25,10 @@ int main(int argc, const char *argv[])
     sgv_obj_freemtl(mtl);
     printf("OK\n");
 
+    printf("Testing test2.obj ... ");
+    obj = sgv_obj_readobj("test2.obj");
+    //sgv_obj_dispobj(obj);
+    sgv_obj_freeobj(obj);
+    printf("OK\n");
     return 0;
 }
