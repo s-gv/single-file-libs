@@ -2,6 +2,10 @@
 *~
 *.swp*
 
+# bin files
+out
+out.exe
+
 # Object files
 *.o
 *.ko
