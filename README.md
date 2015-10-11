@@ -6,7 +6,7 @@ A collection of single file libraries. This was inspired by Sean T. Barrett's
 
 | Libray               | Description                                           |
 | -------------------- | ----------------------------------------------------- |
-| sgv_glmath.h         | 3d matrix transforms like scaling, perspective, etc.  |
+| **sgv_glmath.h**     | 3d matrix transforms like scaling, perspective, etc.  |
 
 How to use the C/C++ libs
 -------------------------
