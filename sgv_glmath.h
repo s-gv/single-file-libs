@@ -26,24 +26,29 @@ Do this:
     #define SGV_GLMATH_IMPLEMENTATION
     before you include this file in *one* C or C++ file to create the implementation.
 
-DOCUMENTATION
--------------
+NOTES
+-----
 
-All angles are expected to be in radians.
-All matrices are expected to be 4x4 matrices in row-major order.
-Warning: OpenGL likes column major MVP matrices. Don't forget to transpose!
-The function declarations below are self-descriptive.
+- The function declarations below are self-descriptive.
+- All angles are expected to be in radians.
+- All matrices are expected to be 4x4 matrices in row-major order.
+- Warning: OpenGL likes column major MVP matrices. Don't forget to transpose!
+- Uses C standard math lib for trigonometric functions.
 
-An example use case:
+EXAMPLE
+-------
 
 float mvpMatrix[16];
-sgv_glm_eye(mvpMatrix);
-sgv_glm_scale(mvpMatrix, 2.0f, 3.0f, 1.0f); // First scale
+sgv_glm_eye(mvpMatrix); // make mvpMatrix a 4x4 identity matrix
+sgv_glm_scale(mvpMatrix, 2.0f, 3.0f, 1.0f); // scale mvpMatrix
 sgv_glm_translate(mvpMatrix, 10.0f, 2.0f, 5.0f); // Then translate the scaled obj
 sgv_glm_transpose(mvpMatrix);
-glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, mvpMatrix); // Transpose has to be GL_FALSE
+glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, mvpMatrix); // Transpose arg has to be GL_FALSE!
 
 */
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// Public API //////////////////////////////////////
 #ifndef SGV_GLMATH_H
 #define SGV_GLMATH_H
 
@@ -77,7 +82,6 @@ void sgv_glm_perspective(float* res, float fovY, float aspect, float nearZ, floa
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Implementation ///////////////////////////////////
-
 #ifdef SGV_GLMATH_IMPLEMENTATION
 
 #include <math.h>
@@ -184,12 +188,12 @@ void sgv_glm_rotateY(float* res, float theta)
 
     sgv_glm_premul(res, r);
 }
-static void norm3(float* res)
+static void sgvp_norm3(float* res)
 {
     float norm = sqrt(res[0]*res[0] + res[1]*res[1] + res[2]*res[2]);
     res[0] /= norm; res[1] /= norm; res[2] /= norm;
 }
-static void cross3(float* res, float* a, float* b)
+static void sgvp_cross3(float* res, float* a, float* b)
 {
     // res = a x b
     res[0] = a[1]*b[2] - b[1]*a[2];
@@ -232,10 +236,10 @@ void sgv_glm_lookAt(float* res,
     //           | 0  0  0  1 |   |  0      0      0      1  |   | 0  0  0   1  |
 
     float s[3], u[3], f[3];
-    f[0] = targetX - eyeX; f[1] = targetY - eyeY; f[2] = targetZ - eyeZ; norm3(f);
+    f[0] = targetX - eyeX; f[1] = targetY - eyeY; f[2] = targetZ - eyeZ; sgvp_norm3(f);
     u[0] = upX; u[1] = upY; u[2] = upZ;
-    cross3(s, u, f); norm3(s);
-    cross3(u, f, s); norm3(u);
+    sgvp_cross3(s, u, f); sgvp_norm3(s);
+    sgvp_cross3(u, f, s); sgvp_norm3(u);
 
     v[0] =  s[0]; v[1] =  s[1]; v[2] =  s[2]; v[3] = -(s[0]*eyeX + s[1]*eyeY + s[2]*eyeZ);
     v[4] =  u[0]; v[5] =  u[1]; v[6] =  u[2]; v[7] = -(u[0]*eyeX + u[1]*eyeY + u[2]*eyeZ);
