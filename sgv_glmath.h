@@ -51,6 +51,7 @@ extern "C" {
 #endif
 
 // All matrices are expected to be 4x4 matrices in row-major order
+// OpenGL likes column major MVP matrices. Don't forget to transpose!
 // All angles are expected to be in radians
 
 void sgv_glm_eye(float* res); // res = I
@@ -63,10 +64,12 @@ void sgv_glm_rotateY(float* res, float theta); // Pitch; res = Ry * res
 void sgv_glm_rotateX(float* res, float theta); // Yaw; res = Rx * res
 void sgv_glm_translate(float* res, float x, float y, float z); // res = T * res
 void sgv_glm_scale(float* res, float x, float y, float z); // res = S * res
-void sgv_glm_lookAt(float* res, 
-                    float eyeX, float eyeY, float eyeZ, 
+void sgv_glm_lookAt(float* res,
+                    float eyeX, float eyeY, float eyeZ,
                     float targetX, float targetY, float targetZ,
-                    float upX, float upY, float upZ); // res = ViewMat * res. Eye is the location of the camera and Center is what the camera is looking at.
+                    float upX, float upY, float upZ); // res = ViewMat * res.
+                    // Eye is the location of the camera and
+                    // Center is what the camera is looking at.
 void sgv_glm_perspective(float* res, float fovY, float aspect, float nearZ, float farZ); // res = perspective * res
 
 #ifdef __cplusplus
@@ -208,18 +211,18 @@ static void dispMat(float* mat)
     printf("\n");
 }
 */
-void sgv_glm_lookAt(float* res, 
-                    float eyeX, float eyeY, float eyeZ, 
+void sgv_glm_lookAt(float* res,
+                    float eyeX, float eyeY, float eyeZ,
                     float targetX, float targetY, float targetZ,
                     float upX, float upY, float upZ)
 {
     float v[16];
     // v = (scale -1 on z-axis) * (change of basis matrix) * (translate matrix)
-    // Change of basis matrix transforms: 
+    // Change of basis matrix transforms:
     //      ex (1, 0, 0), ey (0, 1, 0) and ez (0, 0, 1)
     //   TO
     //      s,            u,           and f
-    //   where f = norm(centre - eye), s = f x up, and u = f x l 
+    //   where f = norm(centre - eye), s = f x up, and u = f x l
     //
     //           | 1  0  0  0 |   |  s[0]   s[1]   s[2]   0  |   | 1  0  0  -ex |
     //      v  = | 0  1  0  0 | * |  u[0]   u[1]   u[2]   0  | * | 0  1  0  -ey |
@@ -228,7 +231,7 @@ void sgv_glm_lookAt(float* res,
 
     float s[3], u[3], f[3];
     f[0] = targetX - eyeX; f[1] = targetY - eyeY; f[2] = targetZ - eyeZ; norm3(f);
-    u[0] = upX; u[1] = upY; u[2] = upZ; 
+    u[0] = upX; u[1] = upY; u[2] = upZ;
     cross3(s, u, f); norm3(s);
     cross3(u, f, s); norm3(u);
 
