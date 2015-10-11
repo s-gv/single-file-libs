@@ -29,7 +29,7 @@ Do this:
 NOTES
 -----
 
-- The function declarations below are self-descriptive.
+- The comments next to the function declarations below serve as documentation.
 - All angles are expected to be in radians.
 - All matrices are expected to be 4x4 matrices in row-major order.
 - Warning: OpenGL likes column major MVP matrices. Don't forget to transpose!
