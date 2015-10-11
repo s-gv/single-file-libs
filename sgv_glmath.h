@@ -28,9 +28,9 @@ Include this .h file in all the source files where you want use the provided
 library functions. Only in one of the files, #define SGV_GLMATH_IMPLEMENTATION
 before including this .h file.
 
-For example, if your project has 'main.c' and 'src.c'. Then,
+For example, if your project has 'main.c', 'src1.c', and 'src2.c'. Then,
 
-In 'src.c':
+In 'src1.c' and 'src2.c':
 #include "sgv_glmath.h"
 ...
 
