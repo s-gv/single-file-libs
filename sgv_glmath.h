@@ -1,4 +1,5 @@
-/*
+/* sgv_glmath - Lib for 3d matrix transforms like scaling, perspective, etc.
+
 Copyright (c) 2015 Sagar Gubbi (sagar.writeme@gmail.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,40 +22,36 @@ SOFTWARE.
 */
 
 /*
-HOW TO USE
-==========
+Do this:
+    #define SGV_GLMATH_IMPLEMENTATION
+    before you include this file in *one* C or C++ file to create the implementation.
 
-Include this .h file in all the source files where you want use the provided
-library functions. Only in one of the files, #define SGV_GLMATH_IMPLEMENTATION
-before including this .h file.
+DOCUMENTATION
+-------------
 
-For example, if your project has 'main.c', 'src1.c', and 'src2.c'. Then,
+All angles are expected to be in radians.
+All matrices are expected to be 4x4 matrices in row-major order.
+Warning: OpenGL likes column major MVP matrices. Don't forget to transpose!
+The function declarations below are self-descriptive.
 
-In 'src1.c' and 'src2.c':
-#include "sgv_glmath.h"
-...
+An example use case:
 
+float mvpMatrix[16];
+sgv_glm_eye(mvpMatrix);
+sgv_glm_scale(mvpMatrix, 2.0f, 3.0f, 1.0f); // First scale
+sgv_glm_translate(mvpMatrix, 10.0f, 2.0f, 5.0f); // Then translate the scaled obj
+sgv_glm_transpose(mvpMatrix);
+glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, mvpMatrix); // Transpose has to be GL_FALSE
 
-In 'main.c':
-#define SGV_GLMATH_IMPLEMENTATION
-#include "sgv_glmath.h"
-...
 */
-
 #ifndef SGV_GLMATH_H
 #define SGV_GLMATH_H
-
-#include <math.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// All matrices are expected to be 4x4 matrices in row-major order
-// OpenGL likes column major MVP matrices. Don't forget to transpose!
-// All angles are expected to be in radians
-
-void sgv_glm_eye(float* res); // res = I
+void sgv_glm_eye(float* res); // res = I (4x4 identity matrix)
 void sgv_glm_transpose(float* res); // res = res'
 void sgv_glm_mul(float* res, float* a, float* b); // res = a*b
 void sgv_glm_premul(float* res, float* m); // res = m * res
@@ -78,7 +75,12 @@ void sgv_glm_perspective(float* res, float fovY, float aspect, float nearZ, floa
 
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+///////////////////////////// Implementation ///////////////////////////////////
+
 #ifdef SGV_GLMATH_IMPLEMENTATION
+
+#include <math.h>
 
 void sgv_glm_eye(float* res)
 {
