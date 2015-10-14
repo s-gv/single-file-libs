@@ -1,7 +1,7 @@
 sgv_single_file_libs
 ====================
 
-A collection of single file libraries. This was inspired by Sean T. Barrett's
+A collection of public domain single file libraries. This was inspired by Sean T. Barrett's
 [stb](https://github.com/nothings/stb) libs.
 
 | Libray               | Description                                           |

@@ -1,27 +1,6 @@
-/* sgv_glmath - Lib for 3d matrix transforms like scaling, perspective, etc.
+/* sgv_glmath.h - Public domain lib for 3d matrix transforms like scaling, perspective, etc.
+Authored in 2015 by Sagar Gubbi (sagar.writeme@gmail.com).
 
-Copyright (c) 2015 Sagar Gubbi (sagar.writeme@gmail.com)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
-/*
 Do this:
     #define SGV_GLMATH_IMPLEMENTATION
     before you include this file in *one* C or C++ file to create the implementation.
@@ -32,7 +11,7 @@ NOTES
 - The comments next to the function declarations below serve as documentation.
 - All angles are expected to be in radians.
 - All matrices are expected to be 4x4 matrices in row-major order.
-- Warning: OpenGL likes column major MVP matrices. Don't forget to transpose!
+- OpenGL likes column major MVP matrices. Don't forget to transpose!
 - Uses C standard math lib for trigonometric functions.
 
 EXAMPLE
@@ -44,6 +23,14 @@ sgv_glm_scale(mvpMatrix, 2.0f, 3.0f, 1.0f); // scale mvpMatrix
 sgv_glm_translate(mvpMatrix, 10.0f, 2.0f, 5.0f); // Then translate the scaled obj
 sgv_glm_transpose(mvpMatrix);
 glUniformMatrix4fv(mvpUniform, 1, GL_FALSE, mvpMatrix); // Transpose arg has to be GL_FALSE!
+
+LICENSE
+-------
+
+This software is in the public domain. Where that dedication is not
+recognized, redistribution and use in source and binary forms, with 
+or without modification, are permitted. No warranty for any purpose 
+is expressed or implied.
 
 */
 
