@@ -48,8 +48,8 @@ is expressed or implied.
 
 */
 
-///////////////////////////////////////////////////////////////////////////////
-////////////////////////////// Public API /////////////////////////////////////
+/*****************************************************************************
+****************************** Public API ***********************************/
 #ifndef SGV_GLMATH_H
 #define SGV_GLMATH_H
 
@@ -63,44 +63,44 @@ extern "C" {
 #define SGVGLM_DEF extern
 #endif
 
-// res = I (4x4 identity matrix)
+/* res = I (4x4 identity matrix) */
 SGVGLM_DEF void sgv_glm_eye(float* res);
 
-// res = res'
+/* res = res' */
 SGVGLM_DEF void sgv_glm_transpose(float* res);
 
-// res = a*b
+/* res = a*b */
 SGVGLM_DEF void sgv_glm_mul(float* res, float* a, float* b);
 
-// res = m * res
+/* res = m * res */
 SGVGLM_DEF void sgv_glm_premul(float* res, float* m);
 
-// dest = src
+/* dest = src */
 SGVGLM_DEF void sgv_glm_cpy(float* dest, float* src);
 
-// Roll; res = Rz * res
+/* Roll; res = Rz * res */
 SGVGLM_DEF void sgv_glm_rotate_z(float* res, float theta);
 
-// Pitch; res = Ry * res
+/* Pitch; res = Ry * res */
 SGVGLM_DEF void sgv_glm_rotate_y(float* res, float theta);
 
-// Yaw; res = Rx * res
+/* Yaw; res = Rx * res */
 SGVGLM_DEF void sgv_glm_rotate_x(float* res, float theta);
 
-// res = T * res
+/* res = T * res */
 SGVGLM_DEF void sgv_glm_translate(float* res, float x, float y, float z);
 
-// res = S * res
+/* res = S * res */
 SGVGLM_DEF void sgv_glm_scale(float* res, float x, float y, float z);
 
-// res = ViewMat * res. Eye is the location of the camera and
-// Center is what the camera is looking at.
+/* res = ViewMat * res. Eye is the location of the camera and
+   Center is what the camera is looking at. */
 SGVGLM_DEF void sgv_glm_look_at(float* res,
                                 float eye_x, float eye_y, float eye_z,
                                 float center_x, float center_y, float center_z,
                                 float up_x, float up_y, float up_z);
 
-// res = perspectiveMat * res
+/* res = perspectiveMat * res */
 SGVGLM_DEF void sgv_glm_perspective(float* res, float fov_y, float aspect,
                                     float near_z, float far_z);
 
@@ -110,8 +110,8 @@ SGVGLM_DEF void sgv_glm_perspective(float* res, float fov_y, float aspect,
 
 #endif
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////// Implementation //////////////////////////////////
+/*****************************************************************************
+****************************** Implementation********************************/
 #ifdef SGV_GLMATH_IMPLEMENTATION
 
 #ifndef SGV_GLMATH_NO_MATH_LIBC
@@ -242,7 +242,7 @@ static void sgvp_norm3(float* res)
 }
 static void sgvp_cross3(float* res, float* a, float* b)
 {
-    // res = a x b
+    /* res = a x b */
     res[0] = a[1]*b[2] - b[1]*a[2];
     res[1] = b[0]*a[2] - a[0]*b[2];
     res[2] = a[0]*b[1] - b[0]*a[1];
@@ -270,17 +270,18 @@ SGVGLM_DEF void sgv_glm_look_at(float* res,
                                 float up_x, float up_y, float up_z)
 {
     float v[16];
-    // v = (scale -1 on z-axis) * (change of basis matrix) * (translate matrix)
-    // Change of basis matrix transforms:
-    //      ex (1, 0, 0), ey (0, 1, 0) and ez (0, 0, 1)
-    //   TO
-    //      s,            u,           and f
-    //   where f = norm(centre - eye), s = f x up, and u = f x l
-    //
-    //        | 1  0  0  0 |   |  s[0]   s[1]   s[2]   0  |   | 1  0  0  -ex |
-    //   v  = | 0  1  0  0 | * |  u[0]   u[1]   u[2]   0  | * | 0  1  0  -ey |
-    //        | 0  0 -1  0 |   |  f[0]   f[1]   f[2]   0  |   | 0  0  1  -ez |
-    //        | 0  0  0  1 |   |  0      0      0      1  |   | 0  0  0   1  |
+    /* v = (scale -1 on z-axis) * (change of basis matrix) * (translate matrix)
+       Change of basis matrix transforms:
+            ex (1, 0, 0), ey (0, 1, 0) and ez (0, 0, 1)
+         TO
+            s,            u,           and f
+         where f = norm(centre - eye), s = f x up, and u = f x l
+
+              | 1  0  0  0 |   |  s[0]   s[1]   s[2]   0  |   | 1  0  0  -ex |
+         v  = | 0  1  0  0 | * |  u[0]   u[1]   u[2]   0  | * | 0  1  0  -ey |
+              | 0  0 -1  0 |   |  f[0]   f[1]   f[2]   0  |   | 0  0  1  -ez |
+              | 0  0  0  1 |   |  0      0      0      1  |   | 0  0  0   1  |
+    */
 
     float s[3], u[3], f[3];
 
@@ -318,8 +319,8 @@ SGVGLM_DEF void sgv_glm_perspective(float* res, float fov_y, float aspect,
                                     float near_z, float far_z)
 {
     float p[16];
-    float height = near_z * tan(fov_y/2); // tan(fovy/2) = (height) / zNear.
-    float width = aspect * height; // aspect = width / height
+    float height = near_z * tan(fov_y/2); /* tan(fovy/2) = (height) / zNear */
+    float width = aspect * height; /* aspect = (width / height) */
 
     sgv_glm_eye(p);
     p[0] = near_z/width;
