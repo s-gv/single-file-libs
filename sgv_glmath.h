@@ -1,12 +1,12 @@
 /*  sgv_glmath.h - Public domain lib for 3d matrix transforms like scaling,
     perspective, etc.
 
-    Authored in 2015 by Sagar Gubbi (sagar.writeme@gmail.com).
+Authored in 2015 by Sagar Gubbi (sagar.writeme@gmail.com).
 
 Do this:
     #define SGV_GLMATH_IMPLEMENTATION
-    before you include this file in *one* C or C++ file to create the
-    implementation.
+before you include this file in *one* C or C++ file to create the
+implementation.
 
 NOTES
 -----
@@ -20,8 +20,8 @@ EXAMPLE
 -------
 
 float mvp_matrix[16];
-sgv_glm_eye(mvp_matrix); // make mvpMatrix a 4x4 identity matrix
-sgv_glm_scale(mvp_matrix, 2.0f, 3.0f, 1.0f); // scale mvpMatrix
+sgv_glm_eye(mvp_matrix); // make mvp_matrix a 4x4 identity matrix
+sgv_glm_scale(mvp_matrix, 2.0f, 3.0f, 1.0f); // scale mvp_matrix
 sgv_glm_translate(mvp_matrix, 10.0f, 2.0f, 5.0f); // Translate the scaled obj
 sgv_glm_transpose(mvp_matrix);
 glUniformMatrix4fv(mvp_uniform, 1, GL_FALSE, mvp_matrix);
@@ -240,6 +240,7 @@ static void sgvp_norm3(float* res)
     float norm = sqrt(res[0]*res[0] + res[1]*res[1] + res[2]*res[2]);
     res[0] /= norm; res[1] /= norm; res[2] /= norm;
 }
+
 static void sgvp_cross3(float* res, float* a, float* b)
 {
     /* res = a x b */
