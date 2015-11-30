@@ -51,7 +51,19 @@ extern "C" {
 /*****************************************************************************
 ****************************** Public API ***********************************/
 
-typedef struct sgv_json_token;
+typedef struct sgv_json_token sgv_json_token;
+typedef enum {
+    SGV_JSON_TOKEN_ARR,
+    SGV_JSON_TOKEN_ELEMENT,
+    SGV_JSON_TOKEN_OBJ,
+    SGV_JSON_TOKEN_PAIR,
+    SGV_JSON_TOKEN_KEY,
+    SGV_JSON_TOKEN_VAL,
+    SGV_JSON_TOKEN_VAL_STR,
+    SGV_JSON_TOKEN_VAL_NUM,
+    SGV_JSON_TOKEN_VAL_BOOL,
+    SGV_JSON_TOKEN_VAL_NULL
+} sgv_json_token_type;
 
 /* returns 0 on success, negative if error, and number of tokens (positive)
    if the size of scratch_pad is in-sufficient. The root JSON obj will be in
@@ -102,6 +114,9 @@ SGVJSON_DEF sgv_json_token* sgv_json_arr_value(sgv_json_token* arr, int idx);
 SGVJSON_DEF int sgv_json_key_string(sgv_json_token* pair_key,
                                     char **str, int *str_len);
 
+/* returns the type of the token */
+SGVJSON_DEF sgv_json_token_type sgv_json_type(sgv_json_token* token);
+
 /* returns JSON obj on success, NULL if error */
 SGVJSON_DEF sgv_json_token* sgv_json_value_obj(sgv_json_token* value);
 
@@ -124,15 +139,29 @@ SGVJSON_DEF int sgv_json_value_bool(sgv_json_token* value, int* bool_val);
 /* returns 0 on success. negative on error. is_null = 1 if Null, else 0 */
 SGVJSON_DEF int sgv_json_value_null(sgv_json_token* value, int* is_null);
 
+
 /*****************************************************************************
 *****************************************************************************/
 
 /* WARNING: Do *not* access members of this struct directly.
    This is a private struct whose definition has been exposed to facilitate
-   allocation of tokens on the stack (or statically) */
-typedef struct sgv_json_token {
-    int type;
-} sgv_json_token;
+   allocation of tokens on the stack (or static allocation) */
+struct sgv_json_token {
+    sgv_json_token_type type;
+    union token_data {
+        struct {
+            sgv_json_token* next;
+            sgv_json_token* key;
+            sgv_json_token* value;
+        } node;
+        struct {
+            char* str;
+            int str_len;
+            int integer_num;
+            double decimal_num;
+        } value;
+    } data;
+};
 
 #ifdef __cplusplus
 }
@@ -143,5 +172,7 @@ typedef struct sgv_json_token {
 /*****************************************************************************
 ****************************** Implementation********************************/
 #ifdef SGV_JSON_IMPLEMENTATION
+
+
 
 #endif
