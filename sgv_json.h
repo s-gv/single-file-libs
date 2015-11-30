@@ -1,4 +1,4 @@
-/*  sgv_json.h - Public domain lib for working with JSON
+/*  sgv_json.h - Public domain single file lib for working with JSON
 
 Authored in 2015 by Sagar Gubbi (sagar.writeme@gmail.com).
 
@@ -10,7 +10,8 @@ implementation.
 NOTES
 -----
 
-- This library performs no dynamic memory allocation on the heap.
+- This library is C89 conformant
+- No dynamic memory allocation on the heap is performed (and no need for libc)
 - See http://www.json.org/ for the JSON spec.
 - Notation of pair, value, array, object, etc. are followed from the spec.
 - Tokens contain pointers to the parsed JSON string, so don't de-allocate it.
@@ -71,18 +72,10 @@ typedef enum {
 /* returns 0 on success, negative if error, and number of tokens (positive)
    if the size of scratch_pad is in-sufficient. The root JSON obj will be in
    tokens[0]. */
-SGVJSON_DEF int sgv_json_parse_object(char* json_str,
-                                      int json_str_len,
-                                      sgv_json_token* tokens,
-                                      int max_tokens);
-
-/* returns 0 on success, negative if error, and number of tokens (positive)
-   if the size of scratch_pad is in-sufficient. The root JSON array will be in
-   tokens[0]. */
-SGVJSON_DEF int sgv_json_parse_array(char* json_str,
-                                     int json_str_len,
-                                     sgv_json_token* tokens,
-                                     int max_tokens);
+SGVJSON_DEF int sgv_json_parse(char* json_str,
+                               int json_str_len,
+                               sgv_json_token* tokens,
+                               int max_tokens);
 
 /* Returns first pair in the obj, NULL if the JSON object is empty/on error */
 SGVJSON_DEF sgv_json_token* sgv_json_first_pair(sgv_json_token* obj);
@@ -147,7 +140,8 @@ SGVJSON_DEF int sgv_json_value_null(sgv_json_token* value, int* is_null);
 *****************************************************************************/
 
 /* WARNING: Do *not* access members of this struct directly.
-   This is a private struct whose definition has been exposed to facilitate
+   The definition of this struct may change in future versions of this lib.
+   It is a private struct whose definition has been exposed to facilitate
    allocation of tokens on the stack (or static allocation) */
 struct sgv_json_token {
     sgv_json_token_type type;
@@ -192,10 +186,10 @@ SGVJSON_DEF sgv_json_token_type sgv_json_type(sgv_json_token* token)
     return token->type;
 }
 
-SGVJSON_DEF int sgv_json_parse_object(char* json_str,
-                                      int json_str_len,
-                                      sgv_json_token* tokens,
-                                      int max_tokens)
+SGVJSON_DEF int sgv_json_parse(char* json_str,
+                               int json_str_len,
+                               sgv_json_token* tokens,
+                               int max_tokens)
 {
     json_str = json_str;
     json_str_len = json_str_len;
