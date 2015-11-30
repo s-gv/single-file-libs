@@ -10,10 +10,10 @@ implementation.
 NOTES
 -----
 
-- This library performs no memory allocation.
+- This library performs no dynamic memory allocation on the heap.
 - See http://www.json.org/ for the JSON spec.
 - Notation of pair, value, array, object, etc. are followed from the spec.
-- Tokens contain pointers to the parsed JSON string (so don't de-allocate it)
+- Tokens contain pointers to the parsed JSON string, so don't de-allocate it.
 
 EXAMPLE
 -------
@@ -21,16 +21,12 @@ EXAMPLE
 OPTIONS
 -------
 
-Define these constants/macros before including this lib to change the behavior.
+Define these constants before including this lib to change the behavior.
 
 - If you want all functions in this lib to be static,
     #define SGV_JSON_STATIC
 - To enable debug messages,
     #define SGV_JSON_DEBUG
-- If you prefer to use your own logging functions instead of printf,
-  define the SGV_JSON_PRINT macro like this:
-    #define SGV_JSON_PRINT(x)  print x
-  This gets used as SGV_JSON_PRINT(("Error code = %d\n", 2));
 
 LICENSE
 -------
@@ -181,16 +177,14 @@ struct sgv_json_token {
 #ifdef SGV_JSON_IMPLEMENTATION
 
 #ifdef SGV_JSON_DEBUG
-    #ifndef SGV_JSON_LOG
-        #include <stdio.h>
-        #define SGV_JSON_LOG(x) printf(x)
-    #endif
+#include <stdio.h>
+#define SGV_JSON_LOG(x) printf x
 #else
-    static void sgv_json_print(const char *str)
-    {
-        str = str;
-    }
-    #define SGV_JSON_LOG(x) do { if (0) sgv_json_print(x); } while (0)
+static void sgv_json_print(const char *str, ...)
+{
+    str = str;
+}
+#define SGV_JSON_LOG(x) do { if (0) sgv_json_print x; } while (0)
 #endif
 
 SGVJSON_DEF sgv_json_token_type sgv_json_type(sgv_json_token* token)
@@ -207,7 +201,7 @@ SGVJSON_DEF int sgv_json_parse_object(char* json_str,
     json_str_len = json_str_len;
     tokens = tokens;
     max_tokens = max_tokens;
-    SGV_JSON_LOG(("Hi %d\n", max_tokens));
+    SGV_JSON_LOG(("Debug test %d\n", max_tokens));
     return 0;
 }
 

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #define SGV_JSON_IMPLEMENTATION
 #include "sgv_json.h"
 
