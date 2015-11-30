@@ -21,9 +21,16 @@ EXAMPLE
 OPTIONS
 -------
 
+Define these constants/macros before including this lib to change the behavior.
+
 - If you want all functions in this lib to be static,
     #define SGV_JSON_STATIC
-  before including this file.
+- To enable debug messages,
+    #define SGV_JSON_DEBUG
+- If you prefer to use your own logging functions instead of printf,
+  define the SGV_JSON_PRINT macro like this:
+    #define SGV_JSON_PRINT(x)  print x
+  This gets used as SGV_JSON_PRINT(("Error code = %d\n", 2));
 
 LICENSE
 -------
@@ -173,6 +180,35 @@ struct sgv_json_token {
 ****************************** Implementation********************************/
 #ifdef SGV_JSON_IMPLEMENTATION
 
+#ifdef SGV_JSON_DEBUG
+    #ifndef SGV_JSON_LOG
+        #include <stdio.h>
+        #define SGV_JSON_LOG(x) printf(x)
+    #endif
+#else
+    static void sgv_json_print(const char *str)
+    {
+        str = str;
+    }
+    #define SGV_JSON_LOG(x) do { if (0) sgv_json_print(x); } while (0)
+#endif
 
+SGVJSON_DEF sgv_json_token_type sgv_json_type(sgv_json_token* token)
+{
+    return token->type;
+}
+
+SGVJSON_DEF int sgv_json_parse_object(char* json_str,
+                                      int json_str_len,
+                                      sgv_json_token* tokens,
+                                      int max_tokens)
+{
+    json_str = json_str;
+    json_str_len = json_str_len;
+    tokens = tokens;
+    max_tokens = max_tokens;
+    SGV_JSON_LOG(("Hi %d\n", max_tokens));
+    return 0;
+}
 
 #endif
