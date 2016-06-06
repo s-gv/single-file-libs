@@ -15,8 +15,8 @@ When #including this file along with the implementation,
   #define SGV_IMGP_STATIC before #including this file.
 - If you dont want <assert.h> (or you want different behviour),
   #define SGV_IMGP_ASSERT(x) before #including this file.
-- If you dont want <math.h>, #define SGV_IMGP_FABS(x) before
-  #including this file.
+- If you dont want <math.h>, #define SGV_IMGP_FABS(x) and SGV_IMGP_EXP(x)
+  before #including this file.
 
 LICENSE
 -------
@@ -119,11 +119,12 @@ SGVIMGP_DEF void sgv_imgp_crop_rescale(sgv_img in, sgv_imgp_i2 in_left_top,
 ****************************** Implementation********************************/
 #ifdef SGV_IMGP_IMPLEMENTATION
 
-#define SGV_IMGP_ABS(x) ((x > 0) ? x : -x)
+#define SGV_IMGP_ABS(x) ((x > 0) ? x : -(x))
 
 #ifndef SGV_IMGP_FABS
 #include <math.h>
 #define SGV_IMGP_FABS(x) fabs(x)
+#define SGV_IMGP_EXP(x) exp(x)
 #endif
 
 #ifndef SGV_IMGP_ASSERT
@@ -298,7 +299,6 @@ SGVIMGP_DEF void sgv_conv2d_valid(sgv_fimg in, sgv_filt filt, sgv_fimg out)
     int xi, yi, ci, xo, yo, co, xf, yf;
 
     SGV_IMGP_ASSERT(filt.ind == in.d && filt.outd == out.d);
-    SGV_IMGP_ASSERT(filt.w % 2 == 1 && filt.h % 2 == 1);
     SGV_IMGP_ASSERT(out.w == (in.w - filt.w + 1));
     SGV_IMGP_ASSERT(out.h == (in.h - filt.h + 1));
 
@@ -371,6 +371,29 @@ SGVIMGP_DEF void sgv_maxpool2(sgv_fimg in, sgv_fimg out)
                 out.data[out.w*out.d*y + out.d*x + c] = val;
             }
         }
+    }
+}
+
+SGVIMGP_DEF void sgv_softmax(float* scores_in, int n, float* probs_out)
+{
+    int i;
+    float max_score, sum;
+
+    max_score = scores_in[0];
+    for(i = 0; i < n; i++) {
+        if(scores_in[i] > max_score) {
+            max_score = scores_in[i];
+        }
+    }
+
+    sum = 0;
+    for(i = 0; i < n; i++) {
+        probs_out[i] = SGV_IMGP_EXP(scores_in[i] - max_score);
+        sum += probs_out[i];
+    }
+
+    for(i = 0; i < n; i++) {
+        probs_out[i] /= sum;
     }
 }
 
