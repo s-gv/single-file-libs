@@ -109,6 +109,9 @@ SGVIMGP_DEF void sgv_imgp_affine_transform(sgv_img in, sgv_imgp_i2 in_offset,
 SGVIMGP_DEF void sgv_imgp_crop_rescale(sgv_img in, sgv_imgp_i2 in_left_top,
                                       sgv_imgp_i2 crop_size, sgv_img out);
 
+/* Finds the threshold that minimizes intra-class variance (Otsu threshold) */
+SGVIMGP_DEF unsigned char sgv_imgp_otsu(sgv_img img);
+
 #ifdef __cplusplus
 }
 #endif
@@ -395,6 +398,56 @@ SGVIMGP_DEF void sgv_softmax(float* scores_in, int n, float* probs_out)
     for(i = 0; i < n; i++) {
         probs_out[i] /= sum;
     }
+}
+
+SGVIMGP_DEF unsigned char sgv_imgp_otsu(sgv_img img)
+{
+    int x, y, i, sum1, total, wB, wF, sumB, mB, mF;
+    int objective, level, max_objective;
+    int hist[256] = {0};
+
+    SGV_IMGP_ASSERT(img.d == 1);
+
+    for(y = 0; y < img.h; y++) {
+        for(x = 0; x < img.w; x++) {
+            hist[img.data[y*img.w + x]] += 1;
+        }
+    }
+
+    sum1 = 0;
+    total = 0;
+    for(i = 0; i < 256; i++) {
+        sum1 += i*hist[i];
+        total += hist[i];
+    }
+
+    wB = 0;
+    wF = 0;
+    sumB = 0;
+    max_objective = 0;
+    level = 0;
+    for(i = 0; i < 256; i++) {
+        wB += hist[i];
+        if(wB == 0) {
+            continue;
+        }
+
+        wF = total - wB;
+        if(wF == 0) {
+            break;
+        }
+
+        sumB += i*hist[i];
+        mB = sumB / wB;
+        mF = (sum1 - sumB) / wF;
+        objective = wB * wF * (mB - mF) * (mB - mF);
+        if(objective >= max_objective) {
+            level = i;
+            max_objective = objective;
+        }
+    }
+
+    return level;
 }
 
 #endif
