@@ -1,4 +1,4 @@
-/* sgv_imgproc - public domain lib of miscellaneous image processing routines
+/* sgv_imgproc - public domain lib of image processing routines
 
 Authored in 2016 by Sagar Gubbi (sagar.writeme@gmail.com).
 
@@ -111,6 +111,9 @@ SGVIMGP_DEF void sgv_imgp_crop_rescale(sgv_img in, sgv_imgp_i2 in_left_top,
 
 /* Finds the threshold that minimizes intra-class variance (Otsu threshold) */
 SGVIMGP_DEF unsigned char sgv_imgp_otsu(sgv_img img);
+
+/* Enhance contrast with histogram equalization */
+SGVIMGP_DEF void sgv_imgp_enhance_contrast(sgv_img in, sgv_img out);
 
 #ifdef __cplusplus
 }
@@ -448,6 +451,37 @@ SGVIMGP_DEF unsigned char sgv_imgp_otsu(sgv_img img)
     }
 
     return level;
+}
+
+SGVIMGP_DEF void sgv_imgp_enhance_contrast(sgv_img in, sgv_img out)
+{
+    int x, y, i;
+    int cdf_min;
+    int cdf[256] = {0};
+
+    SGV_IMGP_ASSERT(in.d == 1);
+    SGV_IMGP_ASSERT(in.w == out.w && in.h == out.h && in.d == out.d);
+
+    for(y = 0; y < in.h; y++) {
+        for(x = 0; x < in.w; x++) {
+            int val = in.data[y*in.w + x];
+            cdf[val]++;
+        }
+    }
+
+    cdf_min = cdf[0];
+    for(i = 1; i < 256; i++) {
+        cdf[i] += cdf[i-1];
+        if(cdf[i] < cdf_min) {
+            cdf_min = cdf[i];
+        }
+    }
+
+    for(y = 0; y < in.h; y++) {
+        for(x = 0; x < in.w; x++) {
+            out.data[y*out.w + x] = (int) ((cdf[in.data[y*in.w + x]] - cdf_min)*255.0f/(in.w*in.h - cdf_min));
+        }
+    }
 }
 
 #endif
