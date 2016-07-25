@@ -53,6 +53,11 @@ typedef struct {
 } sgv_fimg;
 
 typedef struct {
+    int* data; /* in HWC format */
+    int w, h, d;
+} sgv_iimg;
+
+typedef struct {
     float* data; /*[filter_height, filter_width, in_channels, out_channels]*/
     int w, h, ind, outd;
 } sgv_filt;
@@ -71,6 +76,9 @@ typedef struct {
 
 /* Copy in to out. [0-255] in 'in' will be [-1.0, 1.0] in 'out' */
 SGVIMGP_DEF void sgv_make_fimg(sgv_img in, sgv_fimg out);
+
+/* Copy a 1-D image 3 times to make it an grey looking but RGB image */
+SGVIMGP_DEF void sgv_grey_to_rgb(sgv_img grey, sgv_img out_rgb);
 
 /* Draw line between 'p1' and 'p2' in 'img' */
 SGVIMGP_DEF void sgv_draw_line(sgv_img img,
@@ -147,6 +155,21 @@ SGVIMGP_DEF void sgv_make_fimg(sgv_img in, sgv_fimg out)
             for(d = 0; d < in.d; d++) {
                 float v = (in.data[in.w*in.d*y + in.d*x + d] - 127.0f)/128.0f;
                 out.data[in.w*in.d*y + in.d*x + d] = v;
+            }
+        }
+    }
+}
+
+SGVIMGP_DEF void sgv_grey_to_rgb(sgv_img grey, sgv_img out)
+{
+    int x, y, d;
+    SGV_IMGP_ASSERT(grey.w == out.w && grey.h == out.h);
+    SGV_IMGP_ASSERT(grey.d == 1 && out.d == 3);
+
+    for(y = 0; y < grey.h; y++) {
+        for(x = 0; x < grey.w; x++) {
+            for(d = 0; d < 3; d++) {
+                out.data[3*(y*out.w + x) + d] = grey.data[y*grey.w + x];
             }
         }
     }
