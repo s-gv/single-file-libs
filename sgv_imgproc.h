@@ -111,7 +111,8 @@ SGVIMGP_DEF void sgv_softmax(float* scores_in, int n, float* probs_out);
    the transform operation. So, out[0, 0] == in[in_offset.x, in_offset.y].
    theta is the 2x2 transform matrix */
 SGVIMGP_DEF void sgv_imgp_affine_transform(sgv_img in, sgv_imgp_i2 in_offset,
-                                           float* theta, sgv_img out);
+                                           float* theta,
+                                           sgv_img out, sgv_imgp_i2 out_offset);
 
 /* Crop and rescale the image */
 SGVIMGP_DEF void sgv_imgp_crop_rescale(sgv_img in, sgv_imgp_i2 in_left_top,
@@ -122,6 +123,9 @@ SGVIMGP_DEF unsigned char sgv_imgp_otsu(sgv_img img);
 
 /* Enhance contrast with histogram equalization */
 SGVIMGP_DEF void sgv_imgp_enhance_contrast(sgv_img in, sgv_img out);
+
+/* Blit src image to dst image (alpha of src is kept) */
+SGVIMGP_DEF void sgv_blit(sgv_img dst, sgv_img src, sgv_imgp_i2 offset);
 
 #ifdef __cplusplus
 }
@@ -239,15 +243,15 @@ SGVIMGP_DEF void sgv_draw_quadrilateral(sgv_img img,
 }
 
 SGVIMGP_DEF void sgv_imgp_affine_transform(sgv_img in, sgv_imgp_i2 in_offset,
-                                           float* theta, sgv_img out)
+                                           float* theta, sgv_img out, sgv_imgp_i2 out_offset)
 {
     float x, y, xt, yt, alpha, beta, temp;
     int ix, iy, c, xo_a, yo_a, xo_b, yo_b;
 
     for(iy = 0; iy < out.h; iy++) {
         for(ix = 0; ix < out.w; ix++) {
-            x = (ix + 0.5f) / out.w;
-            y = (iy + 0.5f) / out.h;
+            x = (ix + out_offset.x + 0.5f) / out.w;
+            y = (iy + out_offset.y + 0.5f) / out.h;
 
             xt = theta[0]*x + theta[1]*y + (in_offset.x + 0.5f)/in.w;
             yt = theta[2]*x + theta[3]*y + (in_offset.y + 0.5f)/in.h;
@@ -503,6 +507,28 @@ SGVIMGP_DEF void sgv_imgp_enhance_contrast(sgv_img in, sgv_img out)
     for(y = 0; y < in.h; y++) {
         for(x = 0; x < in.w; x++) {
             out.data[y*out.w + x] = (int) ((cdf[in.data[y*in.w + x]] - cdf_min)*255.0f/(in.w*in.h - cdf_min));
+        }
+    }
+}
+
+SGVIMGP_DEF void sgv_blit(sgv_img dst, sgv_img src, sgv_imgp_i2 offset)
+{
+    int x, y, d, xo, yo;
+    float alpha;
+
+    SGV_IMGP_ASSERT(dst.d == 4 && src.d == 4);
+
+    for(y = 0; y < src.h; y++) {
+        for(x = 0; x < src.w; x++) {
+            xo = x + offset.x;
+            yo = y + offset.y;
+            if(xo >= 0 && yo >= 0 && xo < dst.w && yo < dst.h) {
+                alpha = src.data[(y*src.w + x)*4 + 3] / 255.0f;
+                for(d = 0; d < 3; d++) {
+                    dst.data[(yo*dst.w + xo)*4 + d] = (1-alpha)*dst.data[(yo*dst.w + xo)*4 + d] + alpha*src.data[(y*src.w + x)*4 + d];
+                }
+                dst.data[(yo*dst.w + xo)*4 + 3] = src.data[(y*src.w + x)*4 + 3];
+            }
         }
     }
 }
