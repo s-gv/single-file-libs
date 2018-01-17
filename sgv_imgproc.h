@@ -85,6 +85,10 @@ SGVIMGP_DEF void sgv_draw_line(sgv_img img,
                                sgv_imgp_i2 p1, sgv_imgp_i2 p2,
                                sgv_imgp_i3 color, int thickness);
 
+/* Draw a rect from 'p_lt' (left-top) to 'p_rb' (right-bottom) */
+SGVIMGP_DEF void sgv_draw_rect(sgv_img img,
+                               sgv_imgp_i2 p_lt, sgv_imgp_i2 p_rb,
+                               sgv_imgp_i3 color, int thickness);
 
 /* Draw quadrilateral defined by (p1, p2, p3, p4) on img */
 SGVIMGP_DEF void sgv_draw_quadrilateral(sgv_img img,
@@ -229,6 +233,15 @@ SGVIMGP_DEF void sgv_draw_line(sgv_img img,
         sgvp_draw_line_prim(img, p1.x+d, p1.y, p2.x+d, p2.y, color);
         sgvp_draw_line_prim(img, p1.x, p1.y+d, p2.x, p2.y+d, color);
     }
+}
+
+SGVIMGP_DEF void sgv_draw_rect(sgv_img img,
+                               sgv_imgp_i2 p_lt, sgv_imgp_i2 p_rb,
+                               sgv_imgp_i3 color, int thickness)
+{
+    sgv_imgp_i2 p_rt = {p_rb.x, p_lt.y};
+    sgv_imgp_i2 p_lb = {p_lt.x, p_rb.y};
+    sgv_draw_quadrilateral(img, p_lt, p_rt, p_rb, p_lb, color, thickness);
 }
 
 SGVIMGP_DEF void sgv_draw_quadrilateral(sgv_img img,
